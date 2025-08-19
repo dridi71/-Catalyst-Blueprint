@@ -1,0 +1,5 @@
+{
+  "name": "Catalyst Blueprint",
+  "description": "A simulator showcasing the development of Catalyst Blueprint, a full-stack project using FastAPI, React, and Docker, guided by an AI assistant.",
+  "requestFramePermissions": []
+}
