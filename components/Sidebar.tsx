@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AIAssistAction } from '../types';
 import { AI_ACTIONS } from '../constants';
@@ -6,6 +5,8 @@ import { ActionButton } from './ActionButton';
 import { BackendStatus } from './BackendStatus';
 import { RoadmapIcon } from './icons/RoadmapIcon';
 import { Roadmap } from './Roadmap';
+import { ServerIcon } from './icons/ServerIcon';
+import { ViewColumnsIcon } from './icons/ViewColumnsIcon';
 
 interface SidebarProps {
   onAction: (action: AIAssistAction) => void;
@@ -13,10 +14,22 @@ interface SidebarProps {
   setPrompt: (prompt: string) => void;
   isLoading: boolean;
   activeAction: AIAssistAction | null;
+  isEditorVisible: boolean;
+  setIsEditorVisible: (visible: boolean) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onAction, prompt, setPrompt, isLoading, activeAction }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onAction, prompt, setPrompt, isLoading, activeAction, isEditorVisible, setIsEditorVisible }) => {
   const [isRoadmapVisible, setIsRoadmapVisible] = useState(false);
+  const [isBackendStatusVisible, setIsBackendStatusVisible] = useState(false);
+
+  const handlePromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      if (!isLoading) {
+        onAction(AIAssistAction.GENERATE);
+      }
+    }
+  };
 
   return (
     <aside className="w-full md:w-72 bg-slate-950 p-4 flex flex-col border-b md:border-b-0 md:border-r border-slate-700 shadow-2xl md:flex-shrink-0">
@@ -45,14 +58,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ onAction, prompt, setPrompt, i
             id="prompt-input"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handlePromptKeyDown}
             placeholder="e.g., 'Create a Flask API with a /hello endpoint'"
             rows={4}
             className="w-full p-2 bg-slate-800 border border-slate-600 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-slate-200 transition duration-200 disabled:opacity-50"
             disabled={isLoading}
           />
         </div>
+        <div className="mt-4">
+            <button
+                onClick={() => setIsEditorVisible(!isEditorVisible)}
+                className="w-full flex items-center p-2 rounded-md hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                aria-controls="file-editor-panel"
+                aria-expanded={isEditorVisible}
+            >
+                <ViewColumnsIcon className="w-5 h-5 mr-2 text-slate-400" />
+                <span className="font-semibold text-slate-300">{isEditorVisible ? 'Hide' : 'Show'} File Editor</span>
+            </button>
+        </div>
         <div className="mt-6 pt-6 border-t border-slate-700">
-            <BackendStatus />
+            <button
+                onClick={() => setIsBackendStatusVisible(!isBackendStatusVisible)}
+                className="w-full flex items-center justify-between p-2 rounded-md hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                aria-expanded={isBackendStatusVisible}
+                aria-controls="backend-status-content"
+            >
+                <div className="flex items-center">
+                    <ServerIcon className="w-5 h-5 mr-2 text-slate-400" />
+                    <h3 className="font-semibold text-slate-300">Backend Status</h3>
+                </div>
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className={`w-5 h-5 text-slate-400 transition-transform transform ${isBackendStatusVisible ? 'rotate-180' : ''}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+            </button>
+            {isBackendStatusVisible && <div id="backend-status-content" className="mt-2"><BackendStatus /></div>}
         </div>
         <div className="mt-6 pt-6 border-t border-slate-700">
             <button

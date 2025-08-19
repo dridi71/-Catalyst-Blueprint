@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { Sidebar } from './components/Sidebar';
@@ -17,6 +17,8 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeAction, setActiveAction] = useState<AIAssistAction | null>(null);
+  const [sanitizedHtml, setSanitizedHtml] = useState<string>('');
+  const [isEditorVisible, setIsEditorVisible] = useState<boolean>(true);
 
   const handleAction = useCallback(async (action: AIAssistAction) => {
     const actionConfig = AI_ACTIONS[action];
@@ -52,9 +54,13 @@ const App: React.FC = () => {
     }
   }, [pythonCode, prompt]);
   
-  const sanitizedHtml = useMemo(() => {
-    const rawHtml = marked.parse(aiOutput, { breaks: true, gfm: true });
-    return DOMPurify.sanitize(rawHtml);
+  useEffect(() => {
+    const renderHtml = async () => {
+      // The `marked.parse` function can return a promise, so we resolve it to ensure we have the string value.
+      const rawHtml = await Promise.resolve(marked.parse(aiOutput, { breaks: true, gfm: true }));
+      setSanitizedHtml(DOMPurify.sanitize(rawHtml));
+    };
+    renderHtml();
   }, [aiOutput]);
 
 
@@ -62,22 +68,31 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen font-sans bg-slate-900 text-slate-300">
       <Header />
       <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
-        <Sidebar onAction={handleAction} prompt={prompt} setPrompt={setPrompt} isLoading={isLoading} activeAction={activeAction} />
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-          <div className="flex flex-col min-h-[50vh] md:min-h-0 relative">
-            <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold text-cyan-400">Active File Editor</h2>
-                <span className="text-sm font-mono bg-slate-700 px-2 py-1 rounded text-slate-300">README.md</span>
+        <Sidebar
+          onAction={handleAction}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          isLoading={isLoading}
+          activeAction={activeAction}
+          isEditorVisible={isEditorVisible}
+          setIsEditorVisible={setIsEditorVisible}
+        />
+        <main className={`flex-1 grid grid-cols-1 ${isEditorVisible ? 'md:grid-cols-2' : ''} gap-4 p-4`}>
+          {isEditorVisible && (
+            <div className="flex flex-col min-h-[50vh] md:min-h-0 relative">
+              <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-lg font-semibold text-cyan-400">Active File Editor</h2>
+              </div>
+              <div className="relative flex-1">
+                <CodeEditor
+                  value={pythonCode}
+                  onChange={(e) => setPythonCode(e.target.value)}
+                  placeholder="Enter your code here..."
+                />
+                <CopyButton textToCopy={pythonCode} />
+              </div>
             </div>
-            <div className="relative flex-1">
-              <CodeEditor
-                value={pythonCode}
-                onChange={(e) => setPythonCode(e.target.value)}
-                placeholder="Enter your code here..."
-              />
-              <CopyButton textToCopy={pythonCode} />
-            </div>
-          </div>
+          )}
           <div className="flex flex-col min-h-[50vh] md:min-h-0 relative">
             <div className="flex justify-between items-center mb-2">
                 <h2 className="text-lg font-semibold text-purple-400">AI Assistant Output</h2>
